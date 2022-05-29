@@ -31,6 +31,7 @@ from smpl_webuser.verts import verts_decorated
 from lib.sphere_collisions import SphereCollisions
 from lib.max_mixture_prior import MaxMixtureCompletePrior
 # from render_model import render_model
+from hw3 import drawKeyPoints
 
 _LOGGER = logging.getLogger(__name__)
 
