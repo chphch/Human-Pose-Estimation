@@ -32,9 +32,13 @@ def drawMesh(img, vertices, faces, lineColor):
     pass
 
 
-def visSkeleton(img, joints): 
-    pass
-
-
 def drawJoints(img, joints, links, lineColor, keypointColor):
-    pass
+    img_ = img.copy()
+    joints /= 2
+    for ind1, ind2 in list(zip(*links))[1:]:
+        j1 = joints[ind1]
+        j2 = joints[ind2]
+        cv2.line(img_, (int(j1[0]), int(j1[1])), (int(j2[0]), int(j2[1])), color=lineColor, thickness=2)
+    for x, y in joints:
+        cv2.circle(img_, (int(x), int(y)), radius=2, color=keypointColor, thickness=-1)
+    cv2.imwrite('skeleton.jpg', img_)

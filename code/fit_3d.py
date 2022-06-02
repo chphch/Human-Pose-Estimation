@@ -31,7 +31,7 @@ from smpl_webuser.verts import verts_decorated
 from lib.sphere_collisions import SphereCollisions
 from lib.max_mixture_prior import MaxMixtureCompletePrior
 # from render_model import render_model
-from hw3 import drawKeyPoints
+from hw3 import drawKeyPoints, drawBBox, drawJoints
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -439,7 +439,7 @@ def run_single_fit(img,
               'pose': sv.pose.r,
               'betas': sv.betas.r}
 
-    return params, images
+    return params, images, opt_j2d
 
 
 def main(base_dir,
@@ -520,26 +520,30 @@ def main(base_dir,
                     if use_interpenetration:
                         sph_regs = sph_regs_male
 
-            params, vis = run_single_fit(
-                img,
-                joints,
-                conf,
-                model,
-                regs=sph_regs,
-                n_betas=n_betas,
-                flength=flength,
-                pix_thsh=pix_thsh,
-                scale_factor=2,
-                viz=viz,
-                do_degrees=do_degrees)
-            print(params)
+            # params, vis, opt_j2d = run_single_fit(
+            #     img,
+            #     joints,
+            #     conf,
+            #     model,
+            #     regs=sph_regs,
+            #     n_betas=n_betas,
+            #     flength=flength,
+            #     pix_thsh=pix_thsh,
+            #     scale_factor=2,
+            #     viz=viz,
+            #     do_degrees=do_degrees)
+            # with open('temp.pickle', 'wb') as fp:
+            #     pickle.dump((params, vis, opt_j2d), fp)
+            with open('temp.pickle', 'rb') as fp:
+                params, vis, opt_j2d = pickle.load(fp)
 
             #TODO YOUR CODE GOES HERE
 
             #Visualize Optimized SMPL parameters on the Input Image
 
-            params['pose']
-
+            drawBBox(img, joints)
+            drawKeyPoints(img, joints, (0, 255, 0))
+            drawJoints(img, opt_j2d, model.kintree_table, (0, 255, 0), (0, 0, 255))
 
 
 if __name__ == '__main__':
