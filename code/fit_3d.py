@@ -24,6 +24,7 @@ import cv2
 import numpy as np
 import chumpy as ch
 from camera import ProjectPoints
+from eval import reconstructionError
 from lib.robustifiers import GMOf
 from smpl_webuser.serialization import load_model
 from smpl_webuser.lbs import global_rigid_transformation
@@ -31,7 +32,7 @@ from smpl_webuser.verts import verts_decorated
 from lib.sphere_collisions import SphereCollisions
 from lib.max_mixture_prior import MaxMixtureCompletePrior
 # from render_model import render_model
-from hw3 import drawKeyPoints, drawBBox, drawJoints
+from hw3 import drawKeyPoints, drawBBox, drawJoints, drawMesh
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -439,7 +440,9 @@ def run_single_fit(img,
               'pose': sv.pose.r,
               'betas': sv.betas.r}
 
-    return params, images, opt_j2d
+    cam.v = sv
+
+    return params, images, opt_j2d, cam
 
 
 def main(base_dir,
@@ -495,8 +498,8 @@ def main(base_dir,
 
     # Load images
     img_paths = sorted(glob(join(img_dir, '*[0-9].jpg')))
-    # for ind, img_path in enumerate(img_paths): # TODO: Revert
-    for ind, img_path in list(enumerate(img_paths))[:1]:
+    errors = []
+    for ind, img_path in enumerate(img_paths):
         out_path = '%s/%04d.pkl' % (out_dir, ind)
         if not exists(out_path):
             _LOGGER.info('Fitting 3D body on `%s` (saving to `%s`).', img_path,
@@ -520,30 +523,32 @@ def main(base_dir,
                     if use_interpenetration:
                         sph_regs = sph_regs_male
 
-            # params, vis, opt_j2d = run_single_fit(
-            #     img,
-            #     joints,
-            #     conf,
-            #     model,
-            #     regs=sph_regs,
-            #     n_betas=n_betas,
-            #     flength=flength,
-            #     pix_thsh=pix_thsh,
-            #     scale_factor=2,
-            #     viz=viz,
-            #     do_degrees=do_degrees)
-            # with open('temp.pickle', 'wb') as fp:
-            #     pickle.dump((params, vis, opt_j2d), fp)
-            with open('temp.pickle', 'rb') as fp:
-                params, vis, opt_j2d = pickle.load(fp)
+            joints_2d = joints.copy()
+            params, vis, opt_j2d, cam = run_single_fit(
+                img,
+                joints,
+                conf,
+                model,
+                regs=sph_regs,
+                n_betas=n_betas,
+                flength=flength,
+                pix_thsh=pix_thsh,
+                scale_factor=2,
+                viz=viz,
+                do_degrees=do_degrees)
 
             #TODO YOUR CODE GOES HERE
 
             #Visualize Optimized SMPL parameters on the Input Image
 
-            drawBBox(img, joints)
-            drawKeyPoints(img, joints, (0, 255, 0))
-            drawJoints(img, opt_j2d, model.kintree_table, (0, 255, 0), (0, 0, 255))
+            drawBBox(ind, img, joints_2d)
+            drawKeyPoints(ind, img, joints_2d, (0, 255, 0))
+            drawJoints(ind, img, opt_j2d, model.kintree_table, (0, 255, 0), (0, 0, 255))
+            drawMesh(ind, img, cam / 2, model.f, (0, 255, 255))
+            error = reconstructionError(opt_j2d, joints_2d)
+            errors.append(error)
+    print(errors)
+    print(np.mean(errors))
 
 
 if __name__ == '__main__':
